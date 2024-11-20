@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Text Editor with HTML Converter and Alerts</title>
+    <style>
+        /* Basic styling for the editor container */
+        .editor-container {
+            width: 80%;
+            margin: 0 auto;
+            border-radius: 10px;
+            background-color: #f4f4f4;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Toolbar buttons */
+        .toolbar {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .toolbar-btn {
+            padding: 8px 12px;
+            border: 1px solid #C41200;
+            border-radius: 5px;
+            background-color: white;
+            color: #C41200;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .toolbar-btn:hover {
+            background-color: #C41200;
+            color: white;
+        }
+
+        /* Contenteditable div for the editor */
+        .editor {
+            min-height: 300px;
+            border: 1px solid #E9ECEF;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            outline: none;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .editor:focus {
+            border-color: #ed151583;
+            box-shadow: inset 0 3px 1px rgba(0, 0, 0, 0.075), 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+
+        /* HTML view styling */
+        .html-view {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #E9ECEF;
+            font-size: 14px;
+            outline: none;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            resize: none;
+        }
+
+        /* Optional: Tooltip styling for any tooltips you may want to show */
+        .tooltip {
+            position: absolute;
+            z-index: 1070;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 0.875rem;
+            font-weight: 400;
+            color: #fff;
+            background-color: #000;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        /* Your provided CSS styles */
+        .portal-tile {
+            border-radius: 20px;
+            max-height: 250px;
+            min-width: 170px;
+            max-width: 220px;
+            transition: 0.2s linear all;
+        }
+
+        .portal-tile:hover {
+            border-color: #E00707;
+            border-radius: 30px;
+            max-height: 250px;
+            min-width: 170px;
+            max-width: 220px;
+            background-color: rgba(255, 38, 38, 0.1);
+            transform: scale(1.1);
+        }
+
+        .rw_html_module {
+            margin: -40px !important;
+        }
+
+        /* Keyframe animations */
+        @keyframes float {
+            0% {
+                transform: translatey(0px);
+            }
+
+            50% {
+                transform: translatey(-10px);
+            }
+
+            100% {
+                transform: translatey(0px);
+            }
+        }
+
+        @keyframes iconMoveY {
+            0% {
+                transform: translatey(0px);
+            }
+
+            100% {
+                transform: translatey(-5px);
+            }
+        }
+
+        @keyframes formLoader {
+            0% {
+                transform: scaleX(0);
+            }
+
+            50% {
+                transform: scaleX(0.5);
+            }
+
+            100% {
+                transform: scaleX(1);
+            }
+        }
+
+        @keyframes tileLoader {
+            0% {
+                transform: scale(0.7);
+            }
+
+            50% {
+                transform: scale(0.9);
+            }
+
+            75% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes tileAction {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fill {
+            0% {
+                box-shadow: 0 0 inset;
+            }
+
+            100% {
+                box-shadow: 0 -48px inset;
+            }
+        }
+
+        input[type=checkbox]:checked {
+            background-color: rgb(196, 18, 0) !important;
+            color: #ffffff !important;
+            border-color: #C41200;
+            --bs-focus-ring-color: #C41200 !important;
+        }
+
+        .speech {
+            --r: 15px;
+            --t: 25px;
+            background: #EEEEEF;
+            position: relative;
+            padding: 5px;
+            -webkit-mask: radial-gradient(var(--t) at var(--_d) 0, #0000 98%, #000 102%) var(--_d) 100%/calc(100% - var(--r)) var(--t) no-repeat,
+                conic-gradient(at var(--r) var(--r), #000 75%, #0000 0) calc(var(--r)/-2) calc(var(--r)/-2) padding-box,
+                radial-gradient(50% 50%, #000 98%, #0000 101%) 0 0/var(--r) var(--r) space padding-box;
+        }
+
+        .left {
+            --_d: 0%;
+            border-left: var(--t) solid #0000;
+            margin-right: var(--t);
+            place-self: start;
+        }
+
+        .right {
+            --_d: 100%;
+            border-right: var(--t) solid #0000;
+            margin-left: var(--t);
+            place-self: end;
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            display: inline-block;
+            position: relative;
+            border: 4px solid #E9ECEF;
+            box-sizing: border-box;
+            animation: fill 2s linear infinite alternate;
+            color: rgba(255, 0, 0, 0.9);
+            border-radius: 0 0 4px 4px;
+        }
+
+        .loader::after {
+            content: '';
+            box-sizing: border-box;
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 4px solid #E9ECEF;
+            width: 20px;
+            height: 25px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .modal {
+            --bs-modal-padding: 0px !important;
+        }
+
+        .tooltip {
+            position: absolute;
+            z-index: 1070;
+            display: block;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 0.875rem;
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: left;
+            text-decoration: none;
+            text-shadow: none;
+            text-transform: none;
+            letter-spacing: normal;
+            word-break: normal;
+            word-spacing: normal;
+            white-space: normal;
+            line-break: auto;
+            background-color: #000;
+            border-radius: 0.25rem;
+            color: #fff;
+            padding: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <div class="toolbar">
+            <button class="toolbar-btn" onclick="formatText('bold')">Bold</button>
+            <button class="toolbar-btn" onclick="formatText('italic')">Italic</button>
+            <button class="toolbar-btn" onclick="formatText('underline')">Underline</button>
+            <button class="toolbar-btn" onclick="formatText('justifyLeft')">Align Left</button>
+            <button class="toolbar-btn" onclick="formatText('justifyCenter')">Center</button>
+            <button class="toolbar-btn" onclick="formatText('justifyRight')">Align Right</button>
+            <button class="toolbar-btn" onclick="toggleView()">Toggle HTML View</button>
+            <!-- Button to insert alert types -->
+            <button class="toolbar-btn" onclick="insertAlert('success')">Insert Success Alert</button>
+            <button class="toolbar-btn" onclick="insertAlert('danger')">Insert Danger Alert</button>
+            <button class="toolbar-btn" onclick="insertAlert('warning')">Insert Warning Alert</button>
+        </div>
+        
+        <div class="editor" contenteditable="true" id="editor" placeholder="Start typing here..."></div>
+
+        <textarea id="html-view" class="html-view" style="display:none;"></textarea>
+    </div>
+
+    <script>
+        // Toggle between the WYSIWYG editor and HTML view
+        function toggleView() {
+            var editor = document.getElementById("editor");
+            var htmlView = document.getElementById("html-view");
+
+            if (editor.style.display !== "none") {
+                // Switch to HTML view
+                htmlView.style.display = "block";
+                editor.style.display = "none";
+                htmlView.value = editor.innerHTML;
+            } else {
+                // Switch back to WYSIWYG view
+                editor.style.display = "block";
+                htmlView.style.display = "none";
+                editor.innerHTML = htmlView.value;
+            }
+        }
+
+        // Format text (Bold, Italic, etc.)
+        function formatText(command) {
+            document.execCommand(command, false, null);
+        }
+
+        // Insert predefined alert divs
+        function insertAlert(type) {
+            let alertHTML = '';
+            switch(type) {
+                case 'success':
+                    alertHTML = `<div class="alert alert-success" role="alert">A simple success alert—check it out!</div>`;
+                    break;
+                case 'danger':
+                    alertHTML = `<div class="alert alert-danger" role="alert">A simple danger alert—check it out!</div>`;
+                    break;
+                case 'warning':
+                    alertHTML = `<div class="alert alert-warning" role="alert">A simple warning alert—check it out!</div>`;
+                    break;
+            }
+
+            document.execCommand('insertHTML', false, alertHTML);
+        }
+
+        // Optional: Add focus handling for the editor
+        const editor = document.getElementById('editor');
+        editor.addEventListener('focus', () => {
+            editor.classList.add('focused');
+        });
+        editor.addEventListener('blur', () => {
+            editor.classList.remove('focused');
+        });
+    </script>
+</body>
+</html>
